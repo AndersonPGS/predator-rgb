@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #define SET_GAMING_LED 2
 #define GET_GAMING_LED 4
@@ -13,6 +14,7 @@
 #define SET_GAMING_STATIC_LED 6
 #define SET_GAMINGKBBL 20
 #define GET_GAMINGKBBL 21
+#define CONF "/usr/local/etc/predator-rgb.conf"
 
 static io_connect_t conn;
 
@@ -39,7 +41,10 @@ static void usage(void) {
          "  predator-rgb static R G B [zona 1-4|all] [brilho 0-100]\n"
          "  predator-rgb effect MODO [vel 1-9] [brilho] [dir 1|2] [R G B]\n"
          "     modos: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom, 6 meteor, 7 twinkling\n"
-         "  predator-rgb off");
+         "  predator-rgb zones R,G,B R,G,B R,G,B R,G,B [brilho]   uma cor por zona\n"
+         "  predator-rgb off\n"
+         "  predator-rgb apply                        reaplica a última configuração salva\n"
+         "a última configuração válida é salva em " CONF);
 }
 
 static int set_kbbl(int mode, int speed, int bright, int dir, int r, int g, int b) {
@@ -49,10 +54,23 @@ static int set_kbbl(int mode, int speed, int bright, int dir, int r, int g, int 
     return wmi(SET_GAMINGKBBL, p, 16, NULL);
 }
 
-int main(int argc, char **argv) {
-    if (argc < 2) { usage(); return 1; }
-    if (open_bridge()) return 1;
+static int set_zone(int z, int r, int g, int b) {
+    uint64_t v = 0; uint8_t *p = (uint8_t *)&v;
+    p[0] = 1 << (z - 1); p[1] = r; p[2] = g; p[3] = b;
+    return wmi(SET_GAMING_STATIC_LED, &v, 8, NULL);
+}
+
+static int run(int argc, char **argv) {
     const char *cmd = argv[1];
+    if (!strcmp(cmd, "zones") && argc >= 6) {
+        wmi(SET_GAMING_LED, &(uint64_t){8ULL | (15ULL << 40)}, 8, NULL);
+        for (int z = 1; z <= 4; z++) {
+            int r, g, b;
+            if (sscanf(argv[1 + z], "%d,%d,%d", &r, &g, &b) != 3) { usage(); return 1; }
+            if (set_zone(z, r, g, b)) return 1;
+        }
+        return set_kbbl(0, 0, argc >= 7 ? atoi(argv[6]) : 100, 0, 0, 0, 0) ? 1 : 0;
+    }
     if (!strcmp(cmd, "info")) {
         uint64_t v, zero = 0;
         if (!wmi(GET_GAMING_SYS_INFO, &zero, 8, &v)) printf("sys_info:      0x%016llx\n", v);
@@ -70,11 +88,8 @@ int main(int argc, char **argv) {
         if (z0 < 1 || z1 > 4) { usage(); return 1; }
         // liga as 4 zonas (como o driver Linux faz na inicialização)
         wmi(SET_GAMING_LED, &(uint64_t){8ULL | (15ULL << 40)}, 8, NULL);
-        for (int z = z0; z <= z1; z++) {
-            uint64_t v = 0; uint8_t *p = (uint8_t *)&v;
-            p[0] = 1 << (z - 1); p[1] = r; p[2] = g; p[3] = b;
-            if (wmi(SET_GAMING_STATIC_LED, &v, 8, NULL)) return 1;
-        }
+        for (int z = z0; z <= z1; z++)
+            if (set_zone(z, r, g, b)) return 1;
         return set_kbbl(0, 0, bright, 0, 0, 0, 0) ? 1 : 0;
     }
     if (!strcmp(cmd, "effect") && argc >= 3) {
@@ -88,4 +103,29 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "off")) return set_kbbl(0, 0, 0, 0, 0, 0, 0) ? 1 : 0;
     usage();
     return 1;
+}
+
+int main(int argc, char **argv) {
+    if (argc < 2) { usage(); return 1; }
+    if (!strcmp(argv[1], "apply")) {
+        FILE *f = fopen(CONF, "r");
+        if (!f) { fprintf(stderr, "nada salvo em %s\n", CONF); return 1; }
+        char line[512]; char *av[16]; int ac = 0;
+        if (!fgets(line, sizeof line, f)) { fclose(f); return 1; }
+        fclose(f);
+        av[ac++] = argv[0];
+        for (char *t = strtok(line, " \t\n"); t && ac < 15; t = strtok(NULL, " \t\n")) av[ac++] = t;
+        av[ac] = NULL;
+        if (ac < 2 || !strcmp(av[1], "apply") || !strcmp(av[1], "info")) return 1;
+        // o EC pode ainda não estar pronto logo no boot: tenta algumas vezes
+        for (int i = 0; i < 10; i++) { if (!open_bridge()) break; sleep(3); if (i == 9) return 1; }
+        return run(ac, av);
+    }
+    if (open_bridge()) return 1;
+    int rc = run(argc, argv);
+    if (rc == 0 && strcmp(argv[1], "info")) {
+        FILE *f = fopen(CONF, "w");
+        if (f) { for (int i = 1; i < argc; i++) fprintf(f, "%s%s", argv[i], i + 1 < argc ? " " : "\n"); fclose(f); }
+    }
+    return rc;
 }
