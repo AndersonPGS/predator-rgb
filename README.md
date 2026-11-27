@@ -1,5 +1,7 @@
 # PredatorRGB
 
+<img src="app/icon-preview.png" width="128" alt="PredatorRGB icon">
+
 Control the 4-zone RGB keyboard of the **Acer Predator Helios 300 (PH315-53)** on a macOS
 Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense needed.
 

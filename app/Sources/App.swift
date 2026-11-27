@@ -151,28 +151,47 @@ struct ContentView: View {
     }
 }
 
-/// Menu bar icon: four rounded bars (the keyboard zones) in the current colors.
+/// Menu bar icon: the app logo as a compact glyph (keycap + sparkle).
+/// Monochrome template by default; with live colors, the key's lit edge shows the 4 zone colors.
 enum MenuIcon {
     static func make(_ colors: [RGB]) -> NSImage {
-        let size = NSSize(width: 22, height: 16)
+        let size = NSSize(width: 18, height: 16)
+        let live = colors.count == 4
         let img = NSImage(size: size, flipped: false) { _ in
-            let w: CGFloat = 4, gap: CGFloat = 1.5, h: CGFloat = 10
-            let x0 = (size.width - (4 * w + 3 * gap)) / 2, y0 = (size.height - h) / 2
-            for i in 0..<4 {
-                let r = NSRect(x: x0 + CGFloat(i) * (w + gap), y: y0, width: w, height: h)
-                let p = NSBezierPath(roundedRect: r, xRadius: 1.5, yRadius: 1.5)
-                if colors.count == 4 {
+            let key = NSRect(x: 2, y: 1.5, width: 14, height: 13)
+            let outer = NSBezierPath(roundedRect: key, xRadius: 3.2, yRadius: 3.2)
+            let top = NSRect(x: 4, y: 4.5, width: 10, height: 8.5)
+            let inner = NSBezierPath(roundedRect: top, xRadius: 2, yRadius: 2)
+            // ring = outer minus top face
+            let ring = NSBezierPath(); ring.append(outer); ring.append(inner.reversed)
+            if live {
+                NSGraphicsContext.saveGraphicsState()
+                ring.addClip()
+                for i in 0..<4 {
                     let c = colors[i]
-                    let lum = (0.3 * Double(c.r) + 0.59 * Double(c.g) + 0.11 * Double(c.b)) / 255
-                    if lum < 0.08 { NSColor.gray.setStroke(); p.lineWidth = 1; p.stroke() }
-                    else { NSColor(srgbRed: CGFloat(c.r) / 255, green: CGFloat(c.g) / 255, blue: CGFloat(c.b) / 255, alpha: 1).setFill(); p.fill() }
-                } else {
-                    NSColor.black.setStroke(); p.lineWidth = 1; p.stroke()
+                    NSColor(srgbRed: CGFloat(c.r) / 255, green: CGFloat(c.g) / 255, blue: CGFloat(c.b) / 255, alpha: 1).setFill()
+                    NSRect(x: key.minX + CGFloat(i) * key.width / 4, y: key.minY, width: key.width / 4 + 0.5, height: key.height).fill()
                 }
+                NSGraphicsContext.restoreGraphicsState()
+                NSColor.labelColor.withAlphaComponent(0.35).setStroke()
+                outer.lineWidth = 0.5; outer.stroke()
+            } else {
+                NSColor.black.setFill(); ring.fill()
             }
+            // sparkle on the key
+            let c = NSPoint(x: top.midX, y: top.midY), r: CGFloat = 3.3
+            let star = NSBezierPath()
+            for i in 0..<8 {
+                let a = CGFloat(i) * .pi / 4 + .pi / 2
+                let rad = i % 2 == 0 ? r : r * 0.3
+                let p = NSPoint(x: c.x + cos(a) * rad, y: c.y + sin(a) * rad)
+                i == 0 ? star.move(to: p) : star.line(to: p)
+            }
+            star.close()
+            (live ? NSColor.labelColor : NSColor.black).setFill(); star.fill()
             return true
         }
-        img.isTemplate = colors.count != 4
+        img.isTemplate = !live
         return img
     }
 }
