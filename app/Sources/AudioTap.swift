@@ -13,9 +13,9 @@ final class AudioTap {
         case tap(OSStatus), device(OSStatus), io(OSStatus)
         var errorDescription: String? {
             switch self {
-            case .tap(let e): return "Could not capture system audio (\(e))"
-            case .device(let e): return "Could not create audio device (\(e))"
-            case .io(let e): return "Could not start audio (\(e))"
+            case .tap(let e): return String(format: NSLocalizedString("Could not capture system audio (%d)", comment: ""), Int(e))
+            case .device(let e): return String(format: NSLocalizedString("Could not create audio device (%d)", comment: ""), Int(e))
+            case .io(let e): return String(format: NSLocalizedString("Could not start audio (%d)", comment: ""), Int(e))
             }
         }
     }

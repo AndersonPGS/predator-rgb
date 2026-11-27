@@ -212,7 +212,7 @@ final class Controller: ObservableObject {
     func setLaunchAtLogin(_ on: Bool) {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-        } catch { lastError = "Launch at login: \(error.localizedDescription)" }
+        } catch { lastError = String(format: NSLocalizedString("Launch at login: %@", comment: ""), error.localizedDescription) }
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 }

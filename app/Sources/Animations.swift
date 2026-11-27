@@ -14,7 +14,8 @@ enum SoftEffect: String, CaseIterable, Codable, Identifiable {
         return allCases.filter { !$0.isMusic }
     }
     var id: String { rawValue }
-    var name: String {
+    var name: String { NSLocalizedString(englishName, comment: "effect name") }
+    var englishName: String {
         switch self {
         case .rainbow: return "Rainbow"
         case .rainbowWave: return "Rainbow wave"

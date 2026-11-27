@@ -8,9 +8,9 @@ final class Keyboard {
         case driverNotLoaded, openFailed(kern_return_t), callFailed(UInt32, UInt64)
         var errorDescription: String? {
             switch self {
-            case .driverNotLoaded: return "PredatorWMI driver is not loaded"
-            case .openFailed(let kr): return String(format: "Could not open driver (0x%x)", kr)
-            case .callFailed(let m, let r): return String(format: "WMI method %u failed (0x%llx)", m, r)
+            case .driverNotLoaded: return NSLocalizedString("PredatorWMI driver is not loaded", comment: "")
+            case .openFailed(let kr): return String(format: NSLocalizedString("Could not open driver (0x%x)", comment: ""), kr)
+            case .callFailed(let m, let r): return String(format: NSLocalizedString("WMI method %u failed (0x%llx)", comment: ""), m, r)
             }
         }
     }
@@ -106,7 +106,8 @@ enum Effect: UInt8, CaseIterable, Codable, Identifiable {
     // Hardware effects supported by the keyboard firmware (same as PredatorSense).
     case breath = 1, neon = 2, wave = 3, shifting = 4, zoom = 5
     var id: UInt8 { rawValue }
-    var name: String {
+    var name: String { NSLocalizedString(englishName, comment: "effect name") }
+    var englishName: String {
         switch self {
         case .breath: return "Breath"
         case .neon: return "Neon"

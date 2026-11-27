@@ -2,6 +2,8 @@
 
 <img src="app/icon-preview.png" width="128" alt="PredatorRGB icon">
 
+**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
+
 Control the 4-zone RGB keyboard of the **Acer Predator Helios 300 (PH315-53)** on a macOS
 Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense needed.
 
@@ -13,8 +15,10 @@ Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense n
 - Music effects (macOS 14.2+): spectrum, bass pulse, rainbow beat, VU meter. They react to any
   sound playing on the Mac. macOS asks for **System Audio Recording** permission only the first
   time you choose one of them; audio is analyzed live and never saved
-- Low overhead: only changed zones are sent, adjustable frame rate (10/20/30 fps), meters run at 2 fps
+- Low overhead: static and built-in modes send one command and use 0% CPU; animations only send
+  zones that changed, with adjustable frame rate (10/20/30 fps); meters update every 0.5–30 s
 - Optional menu bar icon with the current zone colors
+- App in English, Portuguese (Brazil) and Spanish (follows the system language)
 - Profiles, launch at login, re-applies your lighting at login and after sleep
   (the keyboard resets to blue after a full power-off)
 - Command line tool `predator-rgb` for scripts
@@ -99,6 +103,15 @@ make
 ```
 
 Outputs `build/PredatorWMI.kext`, `build/PredatorRGB.app` and `build/predator-rgb`.
+
+## Welcome to the club
+
+If you are reading this, chances are your PH315-53's dedicated GPU died (a classic for this
+model), your gaming laptop got demoted to "the work PC", and at some point you thought: *"well,
+if it can't game anymore, it might as well be a Mac"*.
+
+Welcome to the club. The RTX is gone, the integrated GPU is doing its best, `-wegnoegpu` has never
+been so emotionally accurate, but hey: **the keyboard still shines**.
 
 ## Credits
 
