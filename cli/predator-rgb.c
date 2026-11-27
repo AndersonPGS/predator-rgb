@@ -1,6 +1,6 @@
-// predator-rgb: controla o teclado RGB de 4 zonas do Acer Predator PH315-53 no macOS
-// via kext PredatorWMI (ponte para o método WMI de gaming da Acer).
-// Protocolo baseado no acer-wmi / facer (JafarAkhondali/acer-predator-turbo-and-rgb-keyboard-linux-module).
+// predator-rgb: control the 4-zone RGB keyboard of Acer Predator laptops on macOS
+// through PredatorWMI.kext (bridge to the Acer gaming WMI method).
+// Protocol from acer-wmi / facer (JafarAkhondali/acer-predator-turbo-and-rgb-keyboard-linux-module).
 #include <IOKit/IOKitLib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,37 +14,34 @@
 #define SET_GAMING_STATIC_LED 6
 #define SET_GAMINGKBBL 20
 #define GET_GAMINGKBBL 21
-#define CONF "/usr/local/etc/predator-rgb.conf"
 
 static io_connect_t conn;
 
 static int open_bridge(void) {
     io_service_t s = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("PredatorWMIBridge"));
-    if (!s) { fprintf(stderr, "kext PredatorWMI não carregado\n"); return -1; }
+    if (!s) { fprintf(stderr, "PredatorWMI driver is not loaded\n"); return -1; }
     kern_return_t kr = IOServiceOpen(s, mach_task_self(), 0, &conn);
     IOObjectRelease(s);
-    if (kr) { fprintf(stderr, "falha ao abrir (0x%x). Rode com sudo.\n", kr); return -1; }
+    if (kr) { fprintf(stderr, "could not open driver (0x%x)\n", kr); return -1; }
     return 0;
 }
 
 static int wmi(uint32_t method, const void *in, size_t len, uint64_t *out) {
     uint64_t sin = method, sout[3] = {0}; uint32_t n = 3;
     kern_return_t kr = IOConnectCallMethod(conn, 0, &sin, 1, in, len, sout, &n, NULL, NULL);
-    if (kr || sout[2]) { fprintf(stderr, "WMI método %u falhou (kr=0x%x acpi=0x%llx)\n", method, kr, sout[2]); return -1; }
+    if (kr || sout[2]) { fprintf(stderr, "WMI method %u failed (kr=0x%x acpi=0x%llx)\n", method, kr, sout[2]); return -1; }
     if (out) *out = sout[0];
     return 0;
 }
 
 static void usage(void) {
-    puts("uso:\n"
-         "  predator-rgb info                         lê estado (somente leitura)\n"
-         "  predator-rgb static R G B [zona 1-4|all] [brilho 0-100]\n"
-         "  predator-rgb effect MODO [vel 1-9] [brilho] [dir 1|2] [R G B]\n"
-         "     modos: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom, 6 meteor, 7 twinkling\n"
-         "  predator-rgb zones R,G,B R,G,B R,G,B R,G,B [brilho]   uma cor por zona\n"
-         "  predator-rgb off\n"
-         "  predator-rgb apply                        reaplica a última configuração salva\n"
-         "a última configuração válida é salva em " CONF);
+    puts("usage:\n"
+         "  predator-rgb info                         read state (read-only)\n"
+         "  predator-rgb static R G B [zone 1-4|all] [brightness 0-100]\n"
+         "  predator-rgb effect MODE [speed 1-9] [brightness] [dir 1|2] [R G B]\n"
+         "     modes: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom, 6 meteor, 7 twinkling\n"
+         "  predator-rgb zones R,G,B R,G,B R,G,B R,G,B [brightness]   one color per zone\n"
+         "  predator-rgb off");
 }
 
 static int set_kbbl(int mode, int speed, int bright, int dir, int r, int g, int b) {
@@ -86,7 +83,7 @@ static int run(int argc, char **argv) {
         int z0 = 1, z1 = 4;
         if (argc >= 6 && strcmp(argv[5], "all")) z0 = z1 = atoi(argv[5]);
         if (z0 < 1 || z1 > 4) { usage(); return 1; }
-        // liga as 4 zonas (como o driver Linux faz na inicialização)
+        // enable the 4 zones (as the Linux driver does on init)
         wmi(SET_GAMING_LED, &(uint64_t){8ULL | (15ULL << 40)}, 8, NULL);
         for (int z = z0; z <= z1; z++)
             if (set_zone(z, r, g, b)) return 1;
@@ -107,25 +104,6 @@ static int run(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     if (argc < 2) { usage(); return 1; }
-    if (!strcmp(argv[1], "apply")) {
-        FILE *f = fopen(CONF, "r");
-        if (!f) { fprintf(stderr, "nada salvo em %s\n", CONF); return 1; }
-        char line[512]; char *av[16]; int ac = 0;
-        if (!fgets(line, sizeof line, f)) { fclose(f); return 1; }
-        fclose(f);
-        av[ac++] = argv[0];
-        for (char *t = strtok(line, " \t\n"); t && ac < 15; t = strtok(NULL, " \t\n")) av[ac++] = t;
-        av[ac] = NULL;
-        if (ac < 2 || !strcmp(av[1], "apply") || !strcmp(av[1], "info")) return 1;
-        // o EC pode ainda não estar pronto logo no boot: tenta algumas vezes
-        for (int i = 0; i < 10; i++) { if (!open_bridge()) break; sleep(3); if (i == 9) return 1; }
-        return run(ac, av);
-    }
     if (open_bridge()) return 1;
-    int rc = run(argc, argv);
-    if (rc == 0 && strcmp(argv[1], "info")) {
-        FILE *f = fopen(CONF, "w");
-        if (f) { for (int i = 1; i < argc; i++) fprintf(f, "%s%s", argv[i], i + 1 < argc ? " " : "\n"); fclose(f); }
-    }
-    return rc;
+    return run(argc, argv);
 }

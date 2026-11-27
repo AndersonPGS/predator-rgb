@@ -6,7 +6,9 @@ CXXFLAGS := -arch x86_64 -mkernel -fapple-kext -nostdinc -nostdlib -fno-rtti -fn
   -isysroot $(SDK) -I$(KH) -mmacosx-version-min=26.0
 CFLAGS := $(filter-out -std=c++17 -fno-rtti -fapple-kext,$(CXXFLAGS))
 
-all: $(OUT) build/predator-rgb
+APP := build/PredatorRGB.app
+
+all: $(OUT) build/predator-rgb $(APP)
 
 $(OUT): kext/WMIBridge.cpp kext/WMIBridge.hpp kext/info.c kext/Info.plist
 	mkdir -p $(OUT)/Contents/MacOS build/obj
@@ -20,6 +22,12 @@ $(OUT): kext/WMIBridge.cpp kext/WMIBridge.hpp kext/info.c kext/Info.plist
 build/predator-rgb: cli/predator-rgb.c
 	mkdir -p build
 	xcrun clang -O2 -Wall -framework IOKit -framework CoreFoundation cli/predator-rgb.c -o $@
+
+$(APP): app/Sources/*.swift app/Info.plist
+	mkdir -p $(APP)/Contents/MacOS
+	xcrun swiftc -O -parse-as-library -target x86_64-apple-macos13.0 -sdk $(SDK) app/Sources/*.swift -o $(APP)/Contents/MacOS/PredatorRGB
+	cp app/Info.plist $(APP)/Contents/Info.plist
+	codesign -f -s - $(APP)
 
 clean:
 	rm -rf build

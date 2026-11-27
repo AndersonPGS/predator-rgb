@@ -8,7 +8,7 @@ OSDefineMetaClassAndStructors(PredatorWMIUserClient, IOUserClient)
 
 #define LOG(fmt, ...) IOLog("PredatorWMI: " fmt "\n", ##__VA_ARGS__)
 
-// Lê o _WDG (tabela GUID -> objeto WMI) e procura o GUID de gaming.
+// Reads _WDG (GUID -> WMI object table) and looks for the Acer gaming GUID.
 bool PredatorWMIBridge::findGamingObject(IOACPIPlatformDevice *dev, char name[5], OSArray *report) {
     OSObject *res = nullptr;
     if (dev->evaluateObject("_WDG", &res) != kIOReturnSuccess || !res) return false;
@@ -18,7 +18,7 @@ bool PredatorWMIBridge::findGamingObject(IOACPIPlatformDevice *dev, char name[5]
         const uint8_t *p = (const uint8_t *)wdg->getBytesNoCopy();
         unsigned n = wdg->getLength() / 20;
         for (unsigned i = 0; i < n; i++, p += 20) {
-            // entrada: GUID[16], objeto[2] (ou notify id), instâncias[1], flags[1]
+            // entry: GUID[16], object id[2] (or notify id), instance count[1], flags[1]
             if (report) {
                 char s[64];
                 snprintf(s, sizeof(s),
@@ -29,7 +29,7 @@ bool PredatorWMIBridge::findGamingObject(IOACPIPlatformDevice *dev, char name[5]
                 OSString *str = OSString::withCString(s);
                 if (str) { report->setObject(str); str->release(); }
             }
-            // flags bit 1 = método
+            // flags bit 1 = method
             if (!found && memcmp(p, kAcerGamingGUID, 16) == 0 && (p[19] & 0x2)) {
                 name[0] = 'W'; name[1] = 'M'; name[2] = (char)p[16]; name[3] = (char)p[17]; name[4] = 0;
                 found = true;
@@ -74,7 +74,7 @@ void PredatorWMIBridge::stop(IOService *provider) {
 
 IOReturn PredatorWMIBridge::callGamingMethod(uint32_t methodId, const uint8_t *in, uint32_t inLen,
                                              uint64_t *out, uint32_t *outType) {
-    if (!fDevice || inLen > 64) return kIOReturnBadArgument;
+    if (!fDevice || inLen > 16) return kIOReturnBadArgument;
     OSNumber *inst = OSNumber::withNumber(0ULL, 32);
     OSNumber *mid = OSNumber::withNumber((unsigned long long)methodId, 32);
     OSData *buf = OSData::withBytes(in, inLen);
@@ -96,10 +96,25 @@ IOReturn PredatorWMIBridge::callGamingMethod(uint32_t methodId, const uint8_t *i
     return r;
 }
 
-// ---- user client: somente administradores ----
+// ---- user client ----
+// Any user may open it, but only keyboard-lighting methods of the Acer gaming
+// interface are allowed (see acer-wmi): fan, turbo and overclock methods are refused.
+static bool isAllowedMethod(uint32_t id) {
+    switch (id) {
+    case 2:  // SET_GAMING_LED (zone enable)
+    case 4:  // GET_GAMING_LED
+    case 5:  // GET_GAMING_SYS_INFO
+    case 6:  // SET_GAMING_STATIC_LED (per-zone color)
+    case 20: // SET_GAMINGKBBL (mode/effect, 16 bytes)
+    case 21: // GET_GAMINGKBBL
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool PredatorWMIUserClient::initWithTask(task_t owningTask, void *securityID, UInt32 type,
                                          OSDictionary *properties) {
-    if (clientHasPrivilege(securityID, kIOClientPrivilegeAdministrator) != kIOReturnSuccess) return false;
     return IOUserClient::initWithTask(owningTask, securityID, type, properties);
 }
 
@@ -113,12 +128,14 @@ IOReturn PredatorWMIUserClient::clientClose() {
     return kIOReturnSuccess;
 }
 
-// seletor 0: scalarInput[0] = methodId; structInput = buffer;
-//            scalarOutput[0] = valor, [1] = tipo (0 nada, 1 inteiro, 2 buffer, 3 outro), [2] = IOReturn
+// selector 0: scalarInput[0] = methodId; structInput = input buffer (<= 16 bytes);
+//             scalarOutput[0] = value, [1] = type (0 none, 1 integer, 2 buffer, 3 other), [2] = IOReturn
 IOReturn PredatorWMIUserClient::externalMethod(uint32_t selector, IOExternalMethodArguments *a,
                                                IOExternalMethodDispatch *, OSObject *, void *) {
     if (selector != 0 || a->scalarInputCount != 1 || a->scalarOutputCount != 3 || a->structureInputDescriptor)
         return kIOReturnBadArgument;
+    if (!isAllowedMethod((uint32_t)a->scalarInput[0])) return kIOReturnNotPermitted;
+    if (a->structureInputSize > 16) return kIOReturnBadArgument;
     uint64_t v; uint32_t t;
     IOReturn r = fBridge->callGamingMethod((uint32_t)a->scalarInput[0],
         (const uint8_t *)a->structureInput, a->structureInputSize, &v, &t);

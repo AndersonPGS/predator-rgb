@@ -3,8 +3,8 @@
 #include <IOKit/IOUserClient.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 
-// GUID do "gaming interface" da Acer (WMID_GUID4 no acer-wmi do Linux).
-// 7A4DDFE7-5B5D-40B4-8595-4408E0CC7F56 no formato binário do _WDG.
+// Acer "gaming interface" GUID (WMID_GUID4 in Linux acer-wmi),
+// 7A4DDFE7-5B5D-40B4-8595-4408E0CC7F56 in _WDG binary layout.
 static const uint8_t kAcerGamingGUID[16] = {
     0xE7, 0xDF, 0x4D, 0x7A, 0x5D, 0x5B, 0xB4, 0x40,
     0x85, 0x95, 0x44, 0x08, 0xE0, 0xCC, 0x7F, 0x56};
@@ -15,7 +15,7 @@ public:
     IOService *probe(IOService *provider, SInt32 *score) override;
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
-    // Chama WMxx(instância 0, methodId, buffer de entrada).
+    // Calls WMxx(instance 0, methodId, input buffer).
     IOReturn callGamingMethod(uint32_t methodId, const uint8_t *in, uint32_t inLen,
                               uint64_t *out, uint32_t *outType);
 private:
