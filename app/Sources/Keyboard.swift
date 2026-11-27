@@ -81,6 +81,10 @@ final class Keyboard {
         }
     }
 
+    func setZone(_ i: Int, _ c: RGB) throws {
+        try wmi(6, [UInt8(1 << i), c.r, c.g, c.b, 0, 0, 0, 0])
+    }
+
     func setEffect(_ effect: Effect, speed: Int, brightness: Int, direction: Int, color: RGB) throws {
         try enableZones()
         let c = effect.acceptsColor ? color : RGB(r: 0, g: 0, b: 0)

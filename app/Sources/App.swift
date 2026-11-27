@@ -7,7 +7,7 @@ struct PredatorRGBApp: App {
         MenuBarExtra {
             ContentView().environmentObject(controller)
         } label: {
-            Image(nsImage: MenuIcon.make(controller.preview))
+            Image(nsImage: MenuIcon.make(controller.iconColors))
         }
         .menuBarExtraStyle(.window)
     }
@@ -98,6 +98,11 @@ struct ContentView: View {
                             Label("Add color", systemImage: "plus.circle") }.buttonStyle(.borderless)
                     }
                 }
+                if !c.state.softEffect.slow {
+                    Picker("Smoothness", selection: $c.state.fps) {
+                        Text("Light").tag(10); Text("Balanced").tag(20); Text("Smooth").tag(30)
+                    }.pickerStyle(.segmented)
+                }
                 Text("Animated effects run while the app is open.").font(.caption).foregroundStyle(.secondary)
             }
 
@@ -125,6 +130,7 @@ struct ContentView: View {
             if let e = c.lastError {
                 Label(e, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.red)
             }
+            Toggle("Show colors in menu bar icon", isOn: $c.liveIcon)
             Toggle("Launch at login", isOn: Binding(get: { c.launchAtLogin }, set: { c.setLaunchAtLogin($0) }))
             HStack {
                 Button("Re-apply") { c.apply() }

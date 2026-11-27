@@ -6,8 +6,10 @@ Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense n
 - Static color for all zones or one color per zone
 - Built-in effects (keyboard firmware): Breath, Neon, Wave, Shifting, Zoom (speed, brightness, direction)
 - Animated effects (driven by the app): Rainbow, Rainbow wave, Color cycle, Multi-color breathing,
-  Strobe, Police, CPU load meter, Aurora
-- Menu bar icon shows the current zone colors
+  Strobe, Police, Aurora, Fire, Candle, Ocean, Sunset, Lava lamp, Heartbeat, Scanner, Sparkle,
+  Ping-pong, CPU load meter, Battery meter, Time of day
+- Low overhead: only changed zones are sent, adjustable frame rate (10/20/30 fps), meters run at 2 fps
+- Optional menu bar icon with the current zone colors
 - Profiles, launch at login, re-applies your lighting at login and after sleep
   (the keyboard resets to blue after a full power-off)
 - Command line tool `predator-rgb` for scripts

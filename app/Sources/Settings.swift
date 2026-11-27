@@ -16,6 +16,7 @@ struct LightState: Codable, Equatable {
     var effectColor = RGB(r: 255, g: 0, b: 0)
     var softEffect: SoftEffect = .rainbowWave
     var palette: [RGB] = [RGB(r: 255, g: 0, b: 0), RGB(r: 0, g: 80, b: 255), RGB(r: 160, g: 0, b: 255)]
+    var fps = 20
 
     init() {}
     // Tolerant decoding: unknown/missing fields fall back to defaults.
@@ -32,6 +33,7 @@ struct LightState: Codable, Equatable {
         effectColor = (try? c.decode(RGB.self, forKey: .effectColor)) ?? def.effectColor
         softEffect = (try? c.decode(SoftEffect.self, forKey: .softEffect)) ?? def.softEffect
         palette = (try? c.decode([RGB].self, forKey: .palette)) ?? def.palette
+        fps = (try? c.decode(Int.self, forKey: .fps)) ?? def.fps
     }
 }
 
@@ -46,6 +48,11 @@ final class Controller: ObservableObject {
     @Published var state: LightState { didSet { if state != oldValue { save(); scheduleApply() } } }
     @Published var profiles: [Profile] { didSet { saveProfiles() } }
     @Published var lastError: String?
+    @Published var liveIcon: Bool = UserDefaults.standard.object(forKey: "liveIcon") as? Bool ?? false {
+        didSet { UserDefaults.standard.set(liveIcon, forKey: "liveIcon"); refreshIcon() }
+    }
+    /// Colors drawn in the menu bar icon. Empty = monochrome outline.
+    @Published var iconColors: [RGB] = []
     @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
 
     /// Colors shown in the menu bar icon (approximate for hardware effects).
@@ -57,6 +64,7 @@ final class Controller: ObservableObject {
     private let animator = Animator()
     private var animStart = Date()
     private var frameCount = 0
+    private var lastSent: [RGB] = []
 
     init() {
         let d = UserDefaults.standard
@@ -103,8 +111,10 @@ final class Controller: ObservableObject {
         stopAnimation()
         let first = animator.frame(state.softEffect, t: 0, speed: state.speed, palette: state.palette)
         try kb.setStatic(first, brightness: state.brightness)
+        lastSent = first
         animStart = Date()
-        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+        let rate = state.softEffect.slow ? 2.0 : Double(max(5, min(state.fps, 30)))
+        let t = Timer(timeInterval: 1.0 / rate, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
         RunLoop.main.add(t, forMode: .common)
@@ -114,9 +124,15 @@ final class Controller: ObservableObject {
     private func tick() {
         let t = Date().timeIntervalSince(animStart)
         let colors = animator.frame(state.softEffect, t: t, speed: state.speed, palette: state.palette)
-        do { try kb.setZonesOnly(colors) } catch { lastError = error.localizedDescription; stopAnimation(); return }
+        // Only send zones that changed: fewer ACPI/EC calls.
+        do {
+            for z in 0..<4 where lastSent.count != 4 || colors[z] != lastSent[z] {
+                try kb.setZone(z, colors[z])
+            }
+            lastSent = colors
+        } catch { lastError = error.localizedDescription; stopAnimation(); return }
         frameCount += 1
-        if frameCount % 8 == 0 { preview = colors }
+        if liveIcon && frameCount % 10 == 0 { preview = colors; refreshIcon() }
     }
 
     func apply() {
@@ -125,25 +141,36 @@ final class Controller: ObservableObject {
             switch state.mode {
             case .animated:
                 try startAnimation()
+                preview = lastSent
+                refreshIcon()
                 lastError = nil
                 return
             case .staticColor:
                 let z = state.linkZones ? Array(repeating: state.zones[0], count: 4) : state.zones
                 try kb.setStatic(z, brightness: state.brightness)
                 preview = z
+                refreshIcon()
             case .effect:
                 preview = state.effect.acceptsColor ? Array(repeating: state.effectColor, count: 4)
                     : [RGB(r: 255, g: 0, b: 0), RGB(r: 0, g: 255, b: 0), RGB(r: 0, g: 80, b: 255), RGB(r: 160, g: 0, b: 255)]
+                refreshIcon()
                 try kb.setEffect(state.effect, speed: state.speed, brightness: state.brightness,
                                  direction: state.direction, color: state.effectColor)
             case .off:
                 try kb.off()
                 preview = []
+                refreshIcon()
             }
             lastError = nil
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    /// Live icon: zone colors. Otherwise a monochrome icon that never changes while animating.
+    private func refreshIcon() {
+        let target = liveIcon ? preview : []
+        if target != iconColors { iconColors = target }
     }
 
     func saveProfile(named name: String) {
