@@ -77,7 +77,7 @@ struct ContentView: View {
 
             if c.state.mode == .animated {
                 Picker("Effect", selection: $c.state.softEffect) {
-                    ForEach(SoftEffect.allCases) { Text($0.name).tag($0) }
+                    ForEach(SoftEffect.available) { Text($0.name).tag($0) }
                 }
                 if c.state.softEffect.usesSpeed {
                     HStack { Text("Speed"); Slider(value: intBinding(\.speed), in: 1...9, step: 1)
@@ -98,7 +98,11 @@ struct ContentView: View {
                             Label("Add color", systemImage: "plus.circle") }.buttonStyle(.borderless)
                     }
                 }
-                if !c.state.softEffect.slow {
+                if c.state.softEffect.isMusic {
+                    Text("Reacts to any sound playing on the Mac. The first time, macOS asks to allow system audio recording; if the lights don't react, enable PredatorRGB in Privacy & Security > Screen & System Audio Recording.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if !c.state.softEffect.slow && !c.state.softEffect.isMusic {
                     Picker("Smoothness", selection: $c.state.fps) {
                         Text("Light").tag(10); Text("Balanced").tag(20); Text("Smooth").tag(30)
                     }.pickerStyle(.segmented)

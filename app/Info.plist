@@ -11,6 +11,7 @@
 	<key>CFBundleShortVersionString</key><string>1.1.0</string>
 	<key>CFBundleVersion</key><string>1</string>
 	<key>LSMinimumSystemVersion</key><string>13.0</string>
+	<key>NSAudioCaptureUsageDescription</key><string>Music effects make the keyboard lights react to the sound playing on your Mac. Audio is analyzed live and never recorded or saved.</string>
 	<key>LSUIElement</key><true/>
 	<key>NSHumanReadableCopyright</key><string>GPL-3.0</string>
 </dict>

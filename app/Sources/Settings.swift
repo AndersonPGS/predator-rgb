@@ -65,6 +65,25 @@ final class Controller: ObservableObject {
     private var animStart = Date()
     private var frameCount = 0
     private var lastSent: [RGB] = []
+    private var audioTap: AnyObject?
+
+    private var audioBands: [Float] {
+        if #available(macOS 14.2, *), let tap = audioTap as? AudioTap { return tap.bands() }
+        return [0, 0, 0, 0]
+    }
+
+    /// Starts system-audio capture only for music effects (permission is requested on first use).
+    private func updateAudio() {
+        guard #available(macOS 14.2, *) else { return }
+        let want = state.mode == .animated && state.softEffect.isMusic
+        if want {
+            let tap = (audioTap as? AudioTap) ?? AudioTap()
+            audioTap = tap
+            do { try tap.start() } catch { lastError = error.localizedDescription }
+        } else if let tap = audioTap as? AudioTap {
+            tap.stop(); audioTap = nil
+        }
+    }
 
     init() {
         let d = UserDefaults.standard
@@ -73,7 +92,11 @@ final class Controller: ObservableObject {
         // Re-apply after wake: the EC may reset the keyboard.
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification,
                                                           object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.stopAnimation() }
+            Task { @MainActor in
+                self?.stopAnimation()
+                if #available(macOS 14.2, *), let tap = self?.audioTap as? AudioTap { tap.stop() }
+                self?.audioTap = nil
+            }
         }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification,
                                                           object: nil, queue: .main) { [weak self] _ in
@@ -113,7 +136,7 @@ final class Controller: ObservableObject {
         try kb.setStatic(first, brightness: state.brightness)
         lastSent = first
         animStart = Date()
-        let rate = state.softEffect.slow ? 2.0 : Double(max(5, min(state.fps, 30)))
+        let rate = state.softEffect.slow ? 2.0 : state.softEffect.isMusic ? 30.0 : Double(max(5, min(state.fps, 30)))
         let t = Timer(timeInterval: 1.0 / rate, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
@@ -123,7 +146,7 @@ final class Controller: ObservableObject {
 
     private func tick() {
         let t = Date().timeIntervalSince(animStart)
-        let colors = animator.frame(state.softEffect, t: t, speed: state.speed, palette: state.palette)
+        let colors = animator.frame(state.softEffect, t: t, speed: state.speed, palette: state.palette, audio: audioBands)
         // Only send zones that changed: fewer ACPI/EC calls.
         do {
             for z in 0..<4 where lastSent.count != 4 || colors[z] != lastSent[z] {
@@ -137,6 +160,7 @@ final class Controller: ObservableObject {
 
     func apply() {
         stopAnimation()
+        updateAudio()
         do {
             switch state.mode {
             case .animated:

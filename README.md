@@ -8,6 +8,9 @@ Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense n
 - Animated effects (driven by the app): Rainbow, Rainbow wave, Color cycle, Multi-color breathing,
   Strobe, Police, Aurora, Fire, Candle, Ocean, Sunset, Lava lamp, Heartbeat, Scanner, Sparkle,
   Ping-pong, CPU load meter, Battery meter, Time of day
+- Music effects (macOS 14.2+): spectrum, bass pulse, rainbow beat, VU meter. They react to any
+  sound playing on the Mac. macOS asks for **System Audio Recording** permission only the first
+  time you choose one of them; audio is analyzed live and never saved
 - Low overhead: only changed zones are sent, adjustable frame rate (10/20/30 fps), meters run at 2 fps
 - Optional menu bar icon with the current zone colors
 - Profiles, launch at login, re-applies your lighting at login and after sleep

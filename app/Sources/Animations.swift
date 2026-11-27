@@ -6,6 +6,13 @@ import IOKit.ps
 enum SoftEffect: String, CaseIterable, Codable, Identifiable {
     case rainbow, rainbowWave, colorCycle, breathing, strobe, police, cpuMeter, aurora
     case fire, candle, ocean, sunset, lava, heartbeat, scanner, sparkle, pingPong, batteryMeter, clock
+    case musicSpectrum, musicPulse, musicRainbow, musicVU
+
+    var isMusic: Bool { [.musicSpectrum, .musicPulse, .musicRainbow, .musicVU].contains(self) }
+    static var available: [SoftEffect] {
+        if #available(macOS 14.2, *) { return allCases }
+        return allCases.filter { !$0.isMusic }
+    }
     var id: String { rawValue }
     var name: String {
         switch self {
@@ -28,11 +35,15 @@ enum SoftEffect: String, CaseIterable, Codable, Identifiable {
         case .pingPong: return "Ping-pong"
         case .batteryMeter: return "Battery meter"
         case .clock: return "Time of day"
+        case .musicSpectrum: return "Music: spectrum"
+        case .musicPulse: return "Music: bass pulse"
+        case .musicRainbow: return "Music: rainbow beat"
+        case .musicVU: return "Music: VU meter"
         }
     }
     /// Uses the palette colors chosen by the user.
-    var usesPalette: Bool { [.colorCycle, .breathing, .strobe, .heartbeat, .scanner, .sparkle, .pingPong].contains(self) }
-    var usesSpeed: Bool { ![.cpuMeter, .batteryMeter, .clock].contains(self) }
+    var usesPalette: Bool { [.colorCycle, .breathing, .strobe, .heartbeat, .scanner, .sparkle, .pingPong, .musicPulse].contains(self) }
+    var usesSpeed: Bool { ![.cpuMeter, .batteryMeter, .clock, .musicSpectrum, .musicPulse, .musicVU].contains(self) }
     /// Effects that change slowly can run at a low frame rate.
     var slow: Bool { [.cpuMeter, .batteryMeter, .clock].contains(self) }
 }
@@ -103,7 +114,9 @@ final class Animator {
     private var batt = (level: 1.0, charging: true), lastBatt = -100.0
     private var sparks = [Double](repeating: 0, count: 4), sparkColor = [Int](repeating: 0, count: 4), lastT = 0.0
 
-    func frame(_ e: SoftEffect, t: Double, speed: Int, palette: [RGB]) -> [RGB] {
+    private var beatHue = 0.0, prevBass: Float = 0
+
+    func frame(_ e: SoftEffect, t: Double, speed: Int, palette: [RGB], audio: [Float] = [0, 0, 0, 0]) -> [RGB] {
         let sp = 0.08 * Double(speed)                     // cycles per second
         let pal = palette.isEmpty ? [RGB(r: 255, g: 0, b: 0)] : palette
         switch e {
@@ -202,6 +215,22 @@ final class Animator {
                 col = mix(stops[i].1, stops[i + 1].1, (h - stops[i].0) / (stops[i + 1].0 - stops[i].0))
             }
             return Array(repeating: col, count: 4)
+        case .musicSpectrum:
+            let hues = [0.0, 0.12, 0.45, 0.72]
+            return (0..<4).map { z in rgb(HSV(h: hues[z], s: 1, v: Double(max(0.04, audio[z])))) }
+        case .musicPulse:
+            let k = Double(max(0.05, audio[0] * audio[0]))
+            return Array(repeating: scale(pal[0], k), count: 4)
+        case .musicRainbow:
+            if audio[0] > 0.8 && prevBass <= 0.8 { beatHue += 0.17 }
+            prevBass = audio[0]
+            beatHue += 0.002 * Double(speed)
+            let k = 0.25 + 0.75 * Double(audio[0])
+            return (0..<4).map { z in rgb(HSV(h: beatHue + Double(z) * 0.08, s: 1, v: k)) }
+        case .musicVU:
+            let level = Double(audio.reduce(0, +) / 4)
+            let color = rgb(HSV(h: 0.33 * (1 - min(level * 1.2, 1)), s: 1, v: 1))
+            return (0..<4).map { z in scale(color, 0.04 + 0.96 * min(max(level * 4.5 - Double(z), 0), 1)) }
         case .aurora:
             return (0..<4).map { z in
                 let h = 0.38 + 0.18 * sin(t * sp * 1.3 + Double(z) * 0.9)
