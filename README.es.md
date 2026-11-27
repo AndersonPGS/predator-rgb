@@ -112,8 +112,9 @@ Si estás leyendo esto, lo más probable es que seas otro desafortunado al que s
 dedicada del PH315-53 (un clásico de este modelo), que vio su portátil gamer degradado a "PC del
 trabajo" y que en algún momento pensó: *"si ya no sirve para jugar, que por lo menos sea un Mac"*.
 
-Bienvenido al club. La RTX se fue, la GPU integrada da lo mejor de sí, `-wegnoegpu` nunca tuvo
-tanto sentido emocional, pero mira: **el teclado sigue brillando**.
+Bienvenido al club. La RTX está tan muerta que ni siquiera hace falta `-wegnoegpu` para
+desactivarla: el sistema ni sabe que alguna vez existió. La GPU integrada da lo mejor de sí,
+pero mira: **el teclado sigue brillando**.
 
 ## Créditos
 

@@ -111,8 +111,9 @@ Se você está lendo isto, é bem provável que você seja mais um infeliz que v
 PH315-53 queimar (um clássico deste modelo), que teve o notebook gamer rebaixado a "PC de trabalho"
 e que, em algum momento, pensou: *"já que não dá mais pra jogar, que pelo menos vire um Mac"*.
 
-Seja bem-vindo ao clube. A RTX se foi, a GPU integrada está dando o melhor de si, o `-wegnoegpu`
-nunca fez tanto sentido emocional, mas olha só: **o teclado continua brilhando**.
+Seja bem-vindo ao clube. A RTX morreu tão bem morrida que nem precisa de `-wegnoegpu` para
+desativá-la: o sistema nem sabe que um dia ela existiu. A GPU integrada está dando o melhor de si,
+mas olha só: **o teclado continua brilhando**.
 
 ## Créditos
 

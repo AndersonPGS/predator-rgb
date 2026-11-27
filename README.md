@@ -110,8 +110,9 @@ If you are reading this, chances are your PH315-53's dedicated GPU died (a class
 model), your gaming laptop got demoted to "the work PC", and at some point you thought: *"well,
 if it can't game anymore, it might as well be a Mac"*.
 
-Welcome to the club. The RTX is gone, the integrated GPU is doing its best, `-wegnoegpu` has never
-been so emotionally accurate, but hey: **the keyboard still shines**.
+Welcome to the club. The RTX is so gone that you don't even need `-wegnoegpu` to disable it: the
+system doesn't even know it ever existed. The integrated GPU is doing its best, but hey:
+**the keyboard still shines**.
 
 ## Credits
 
