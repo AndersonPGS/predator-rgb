@@ -53,8 +53,7 @@ Then:
 1. **System Settings → Privacy & Security → Security**: click **Allow** for the PredatorWMI
    (or "unknown developer") system extension.
 2. **Restart.**
-3. Open **PredatorRGB** from Applications. A keyboard icon appears in the menu bar.
-   The app is not notarized: the first time, right-click it → **Open**.
+3. Open **PredatorRGB** from Applications. Its icon (a key with a sparkle) appears in the menu bar.
 4. Optional: enable **Launch at login** in the app.
 
 The driver lives in `/Library/Extensions`, not in your EFI, so it never touches your

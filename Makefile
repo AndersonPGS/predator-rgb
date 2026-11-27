@@ -30,6 +30,14 @@ $(APP): app/Sources/*.swift app/Info.plist app/AppIcon.icns
 	cp app/Info.plist $(APP)/Contents/Info.plist
 	codesign -f -s - $(APP)
 
+VERSION := $(shell /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" app/Info.plist)
+
+release: all
+	rm -rf build/release && mkdir -p build/release/PredatorRGB-$(VERSION)
+	cp -R $(OUT) $(APP) build/predator-rgb install.sh uninstall.sh LICENSE README.md build/release/PredatorRGB-$(VERSION)/
+	cd build/release && ditto -c -k --keepParent PredatorRGB-$(VERSION) PredatorRGB-$(VERSION).zip
+	@echo build/release/PredatorRGB-$(VERSION).zip
+
 clean:
 	rm -rf build
-.PHONY: all clean
+.PHONY: all clean release
