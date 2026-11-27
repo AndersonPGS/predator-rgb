@@ -108,13 +108,16 @@ Genera `build/PredatorWMI.kext`, `build/PredatorRGB.app` y `build/predator-rgb`.
 
 ## Bienvenido al club
 
-Si estás leyendo esto, lo más probable es que seas otro desafortunado al que se le quemó la GPU
-dedicada del PH315-53 (un clásico de este modelo), que vio su portátil gamer degradado a "PC del
-trabajo" y que en algún momento pensó: *"si ya no sirve para jugar, que por lo menos sea un Mac"*.
+Si estás leyendo esto, probablemente ya eres parte del club: la GPU dedicada de tu PH315-53 se
+quemó (un clásico de este modelo), tu portátil gamer fue degradado a "PC del trabajo" y, en un
+momento de fe, pensaste: *"si ya no sirve para jugar, que por lo menos sea un Mac"*.
 
-Bienvenido al club. La RTX está tan muerta que ni siquiera hace falta `-wegnoegpu` para
-desactivarla: el sistema ni sabe que alguna vez existió. La GPU integrada da lo mejor de sí,
-pero mira: **el teclado sigue brillando**.
+La GPU puede haber muerto, pero **el RGB no puede morir**. Es la última señal de vida del gamer
+que lleva dentro. Y como todo el mundo sabe que el RGB da +30 FPS, tu portátil sigue firme como un
+auténtico **gamer de oficina**: hojas de cálculo en ultra, correos a 144 Hz y videollamadas con
+las luces al máximo.
+
+Bienvenido al club.
 
 ## Créditos
 
