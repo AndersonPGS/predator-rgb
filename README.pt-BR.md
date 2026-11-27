@@ -108,11 +108,11 @@ Gera `build/PredatorWMI.kext`, `build/PredatorRGB.app` e `build/predator-rgb`.
 ## Bem-vindo ao clube
 
 Se você está lendo isto, provavelmente já faz parte do clube: a GPU dedicada do seu PH315-53
-queimou (um clássico deste modelo), o notebook gamer foi rebaixado a "PC de trabalho" e, num
+queimou, o notebook gamer foi rebaixado a "PC de trabalho" e, num
 momento de fé, você pensou: *"já que não dá mais pra jogar, que pelo menos vire um Mac"*.
 
 A GPU pode ter morrido, mas **o RGB não pode morrer**. Ele é o último sinal de vida do gamer que
-existe aí dentro. E como todo mundo sabe que RGB dá +30 de FPS, o seu notebook continua firme como
+existe aí dentro. E como todo mundo sabe que RGB dá mais FPS, o seu notebook continua firme como
 um legítimo **gamer de trabalho**: planilha no ultra, e-mail a 144 Hz e call com a iluminação no
 máximo.
 

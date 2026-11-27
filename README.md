@@ -106,12 +106,12 @@ Outputs `build/PredatorWMI.kext`, `build/PredatorRGB.app` and `build/predator-rg
 
 ## Welcome to the club
 
-If you are reading this, you are probably a member already: your PH315-53's dedicated GPU died
-(a classic for this model), your gaming laptop got demoted to "the work PC", and in a moment of
+If you are reading this, you are probably a member already: your PH315-53's dedicated GPU died,
+your gaming laptop got demoted to "the work PC", and in a moment of
 faith you thought: *"well, if it can't game anymore, it might as well be a Mac"*.
 
 The GPU may be dead, but **the RGB must never die**. It is the last sign of life of the gamer
-inside. And since everyone knows RGB adds +30 FPS, your laptop is still a proud **work gamer**:
+inside. And since everyone knows RGB adds FPS, your laptop is still a proud **work gamer**:
 spreadsheets on ultra, emails at 144 Hz and video calls with the lights maxed out.
 
 Welcome to the club.
