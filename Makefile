@@ -23,8 +23,9 @@ build/predator-rgb: cli/predator-rgb.c
 	mkdir -p build
 	xcrun clang -O2 -Wall -framework IOKit -framework CoreFoundation cli/predator-rgb.c -o $@
 
-$(APP): app/Sources/*.swift app/Info.plist
-	mkdir -p $(APP)/Contents/MacOS
+$(APP): app/Sources/*.swift app/Info.plist app/AppIcon.icns
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
+	cp app/AppIcon.icns $(APP)/Contents/Resources/
 	xcrun swiftc -O -parse-as-library -target x86_64-apple-macos13.0 -sdk $(SDK) app/Sources/*.swift -o $(APP)/Contents/MacOS/PredatorRGB
 	cp app/Info.plist $(APP)/Contents/Info.plist
 	codesign -f -s - $(APP)

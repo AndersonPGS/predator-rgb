@@ -3,7 +3,7 @@ import SwiftUI
 import AppKit
 import ServiceManagement
 
-enum LightMode: String, Codable { case staticColor, effect, off }
+enum LightMode: String, Codable { case staticColor, effect, animated, off }
 
 struct LightState: Codable, Equatable {
     var mode: LightMode = .staticColor
@@ -14,6 +14,25 @@ struct LightState: Codable, Equatable {
     var speed = 4
     var direction = 1
     var effectColor = RGB(r: 255, g: 0, b: 0)
+    var softEffect: SoftEffect = .rainbowWave
+    var palette: [RGB] = [RGB(r: 255, g: 0, b: 0), RGB(r: 0, g: 80, b: 255), RGB(r: 160, g: 0, b: 255)]
+
+    init() {}
+    // Tolerant decoding: unknown/missing fields fall back to defaults.
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        let def = LightState()
+        mode = (try? c.decode(LightMode.self, forKey: .mode)) ?? def.mode
+        zones = (try? c.decode([RGB].self, forKey: .zones)) ?? def.zones
+        linkZones = (try? c.decode(Bool.self, forKey: .linkZones)) ?? def.linkZones
+        brightness = (try? c.decode(Int.self, forKey: .brightness)) ?? def.brightness
+        effect = (try? c.decode(Effect.self, forKey: .effect)) ?? def.effect
+        speed = (try? c.decode(Int.self, forKey: .speed)) ?? def.speed
+        direction = (try? c.decode(Int.self, forKey: .direction)) ?? def.direction
+        effectColor = (try? c.decode(RGB.self, forKey: .effectColor)) ?? def.effectColor
+        softEffect = (try? c.decode(SoftEffect.self, forKey: .softEffect)) ?? def.softEffect
+        palette = (try? c.decode([RGB].self, forKey: .palette)) ?? def.palette
+    }
 }
 
 struct Profile: Codable, Identifiable, Equatable {
@@ -29,14 +48,25 @@ final class Controller: ObservableObject {
     @Published var lastError: String?
     @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
 
+    /// Colors shown in the menu bar icon (approximate for hardware effects).
+    @Published var preview: [RGB] = []
+
     private let kb = Keyboard()
     private var pending: DispatchWorkItem?
+    private var timer: Timer?
+    private let animator = Animator()
+    private var animStart = Date()
+    private var frameCount = 0
 
     init() {
         let d = UserDefaults.standard
         state = (d.data(forKey: "state")).flatMap { try? JSONDecoder().decode(LightState.self, from: $0) } ?? LightState()
         profiles = (d.data(forKey: "profiles")).flatMap { try? JSONDecoder().decode([Profile].self, from: $0) } ?? []
         // Re-apply after wake: the EC may reset the keyboard.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification,
+                                                          object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.stopAnimation() }
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification,
                                                           object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Task { @MainActor in self?.apply() } }
@@ -67,17 +97,48 @@ final class Controller: ObservableObject {
         }
     }
 
+    private func stopAnimation() { timer?.invalidate(); timer = nil }
+
+    private func startAnimation() throws {
+        stopAnimation()
+        let first = animator.frame(state.softEffect, t: 0, speed: state.speed, palette: state.palette)
+        try kb.setStatic(first, brightness: state.brightness)
+        animStart = Date()
+        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    private func tick() {
+        let t = Date().timeIntervalSince(animStart)
+        let colors = animator.frame(state.softEffect, t: t, speed: state.speed, palette: state.palette)
+        do { try kb.setZonesOnly(colors) } catch { lastError = error.localizedDescription; stopAnimation(); return }
+        frameCount += 1
+        if frameCount % 8 == 0 { preview = colors }
+    }
+
     func apply() {
+        stopAnimation()
         do {
             switch state.mode {
+            case .animated:
+                try startAnimation()
+                lastError = nil
+                return
             case .staticColor:
                 let z = state.linkZones ? Array(repeating: state.zones[0], count: 4) : state.zones
                 try kb.setStatic(z, brightness: state.brightness)
+                preview = z
             case .effect:
+                preview = state.effect.acceptsColor ? Array(repeating: state.effectColor, count: 4)
+                    : [RGB(r: 255, g: 0, b: 0), RGB(r: 0, g: 255, b: 0), RGB(r: 0, g: 80, b: 255), RGB(r: 160, g: 0, b: 255)]
                 try kb.setEffect(state.effect, speed: state.speed, brightness: state.brightness,
                                  direction: state.direction, color: state.effectColor)
             case .off:
                 try kb.off()
+                preview = []
             }
             lastError = nil
         } catch {

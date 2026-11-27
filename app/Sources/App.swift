@@ -4,8 +4,10 @@ import SwiftUI
 struct PredatorRGBApp: App {
     @StateObject private var controller = Controller()
     var body: some Scene {
-        MenuBarExtra("PredatorRGB", systemImage: "keyboard") {
+        MenuBarExtra {
             ContentView().environmentObject(controller)
+        } label: {
+            Image(nsImage: MenuIcon.make(controller.preview))
         }
         .menuBarExtraStyle(.window)
     }
@@ -41,7 +43,8 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("", selection: $c.state.mode) {
                 Text("Static").tag(LightMode.staticColor)
-                Text("Effect").tag(LightMode.effect)
+                Text("Built-in").tag(LightMode.effect)
+                Text("Animated").tag(LightMode.animated)
                 Text("Off").tag(LightMode.off)
             }
             .pickerStyle(.segmented).labelsHidden()
@@ -70,6 +73,32 @@ struct ContentView: View {
                     }.pickerStyle(.segmented)
                 }
                 if c.state.effect.acceptsColor { Swatches(color: $c.state.effectColor) }
+            }
+
+            if c.state.mode == .animated {
+                Picker("Effect", selection: $c.state.softEffect) {
+                    ForEach(SoftEffect.allCases) { Text($0.name).tag($0) }
+                }
+                if c.state.softEffect.usesSpeed {
+                    HStack { Text("Speed"); Slider(value: intBinding(\.speed), in: 1...9, step: 1)
+                             Text("\(c.state.speed)").monospacedDigit().frame(width: 20) }
+                }
+                if c.state.softEffect.usesPalette {
+                    ForEach(c.state.palette.indices, id: \.self) { i in
+                        HStack {
+                            Swatches(color: $c.state.palette[i])
+                            if c.state.palette.count > 1 {
+                                Button { c.state.palette.remove(at: i) } label: { Image(systemName: "minus.circle") }
+                                    .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                    if c.state.palette.count < 4 {
+                        Button { c.state.palette.append(RGB(r: 255, g: 255, b: 255)) } label: {
+                            Label("Add color", systemImage: "plus.circle") }.buttonStyle(.borderless)
+                    }
+                }
+                Text("Animated effects run while the app is open.").font(.caption).foregroundStyle(.secondary)
             }
 
             if c.state.mode != .off {
@@ -109,5 +138,31 @@ struct ContentView: View {
 
     private func intBinding(_ kp: WritableKeyPath<LightState, Int>) -> Binding<Double> {
         Binding(get: { Double(c.state[keyPath: kp]) }, set: { c.state[keyPath: kp] = Int($0) })
+    }
+}
+
+/// Menu bar icon: four rounded bars (the keyboard zones) in the current colors.
+enum MenuIcon {
+    static func make(_ colors: [RGB]) -> NSImage {
+        let size = NSSize(width: 22, height: 16)
+        let img = NSImage(size: size, flipped: false) { _ in
+            let w: CGFloat = 4, gap: CGFloat = 1.5, h: CGFloat = 10
+            let x0 = (size.width - (4 * w + 3 * gap)) / 2, y0 = (size.height - h) / 2
+            for i in 0..<4 {
+                let r = NSRect(x: x0 + CGFloat(i) * (w + gap), y: y0, width: w, height: h)
+                let p = NSBezierPath(roundedRect: r, xRadius: 1.5, yRadius: 1.5)
+                if colors.count == 4 {
+                    let c = colors[i]
+                    let lum = (0.3 * Double(c.r) + 0.59 * Double(c.g) + 0.11 * Double(c.b)) / 255
+                    if lum < 0.08 { NSColor.gray.setStroke(); p.lineWidth = 1; p.stroke() }
+                    else { NSColor(srgbRed: CGFloat(c.r) / 255, green: CGFloat(c.g) / 255, blue: CGFloat(c.b) / 255, alpha: 1).setFill(); p.fill() }
+                } else {
+                    NSColor.black.setStroke(); p.lineWidth = 1; p.stroke()
+                }
+            }
+            return true
+        }
+        img.isTemplate = colors.count != 4
+        return img
     }
 }

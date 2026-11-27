@@ -74,6 +74,13 @@ final class Keyboard {
         try setMode(mode: 0, speed: 0, brightness: UInt8(clamping: brightness), direction: 0)
     }
 
+    /// Fast path for app-driven animations: static mode must already be active.
+    func setZonesOnly(_ colors: [RGB]) throws {
+        for (i, c) in colors.prefix(4).enumerated() {
+            try wmi(6, [UInt8(1 << i), c.r, c.g, c.b, 0, 0, 0, 0])
+        }
+    }
+
     func setEffect(_ effect: Effect, speed: Int, brightness: Int, direction: Int, color: RGB) throws {
         try enableZones()
         let c = effect.acceptsColor ? color : RGB(r: 0, g: 0, b: 0)
@@ -92,7 +99,8 @@ struct RGB: Codable, Equatable {
 }
 
 enum Effect: UInt8, CaseIterable, Codable, Identifiable {
-    case breath = 1, neon = 2, wave = 3, shifting = 4, zoom = 5, meteor = 6, twinkling = 7
+    // Hardware effects supported by the keyboard firmware (same as PredatorSense).
+    case breath = 1, neon = 2, wave = 3, shifting = 4, zoom = 5
     var id: UInt8 { rawValue }
     var name: String {
         switch self {
@@ -101,10 +109,8 @@ enum Effect: UInt8, CaseIterable, Codable, Identifiable {
         case .wave: return "Wave"
         case .shifting: return "Shifting"
         case .zoom: return "Zoom"
-        case .meteor: return "Meteor"
-        case .twinkling: return "Twinkling"
         }
     }
     var acceptsColor: Bool { [.breath, .shifting, .zoom].contains(self) }
-    var hasDirection: Bool { [.wave, .shifting, .zoom, .meteor].contains(self) }
+    var hasDirection: Bool { [.wave, .shifting, .zoom].contains(self) }
 }
