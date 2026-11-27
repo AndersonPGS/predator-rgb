@@ -46,6 +46,14 @@ enum SoftEffect: String, CaseIterable, Codable, Identifiable {
     var usesSpeed: Bool { ![.cpuMeter, .batteryMeter, .clock, .musicSpectrum, .musicPulse, .musicVU].contains(self) }
     /// Effects that change slowly can run at a low frame rate.
     var slow: Bool { [.cpuMeter, .batteryMeter, .clock].contains(self) }
+    /// Seconds between updates for slow effects (colors are only sent when they change).
+    var updateInterval: Double {
+        switch self {
+        case .clock: return 30
+        case .batteryMeter: return 5
+        default: return 0.5
+        }
+    }
 }
 
 struct HSV { var h, s, v: Double }
@@ -145,7 +153,7 @@ final class Animator {
             return phase == 0 ? [flash ? red : off, flash ? red : off, off, off]
                               : [off, off, flash ? blue : off, flash ? blue : off]
         case .cpuMeter:
-            if t - lastCPU >= 0.5 { cpuLevel = cpuLevel * 0.5 + cpu.sample() * 0.5; lastCPU = t }
+            if t - lastCPU >= 0.45 { cpuLevel = cpuLevel * 0.5 + cpu.sample() * 0.5; lastCPU = t }
             // zones fill left to right; color goes green -> yellow -> red
             let color = rgb(HSV(h: 0.33 * (1 - cpuLevel), s: 1, v: 1))
             return (0..<4).map { z in
@@ -200,7 +208,7 @@ final class Animator {
             }
             return out
         case .batteryMeter:
-            if t - lastBatt >= 5 { batt = battery(); lastBatt = t }
+            if t - lastBatt >= 4.9 { batt = battery(); lastBatt = t }
             let color = batt.charging ? RGB(r: 0, g: 140, b: 255) : rgb(HSV(h: 0.33 * batt.level, s: 1, v: 1))
             return (0..<4).map { z in scale(color, 0.06 + 0.94 * min(max(batt.level * 4 - Double(z), 0), 1)) }
         case .clock:

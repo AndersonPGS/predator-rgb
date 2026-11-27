@@ -136,10 +136,12 @@ final class Controller: ObservableObject {
         try kb.setStatic(first, brightness: state.brightness)
         lastSent = first
         animStart = Date()
-        let rate = state.softEffect.slow ? 2.0 : state.softEffect.isMusic ? 30.0 : Double(max(5, min(state.fps, 30)))
-        let t = Timer(timeInterval: 1.0 / rate, repeats: true) { [weak self] _ in
+        let interval = state.softEffect.slow ? state.softEffect.updateInterval
+            : 1.0 / (state.softEffect.isMusic ? 30.0 : Double(max(5, min(state.fps, 30))))
+        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+        t.tolerance = interval * 0.2   // lets macOS batch wakeups
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }
@@ -155,7 +157,7 @@ final class Controller: ObservableObject {
             lastSent = colors
         } catch { lastError = error.localizedDescription; stopAnimation(); return }
         frameCount += 1
-        if liveIcon && frameCount % 10 == 0 { preview = colors; refreshIcon() }
+        if liveIcon && (state.softEffect.slow || frameCount % 10 == 0) { preview = colors; refreshIcon() }
     }
 
     func apply() {
