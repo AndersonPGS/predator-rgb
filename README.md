@@ -4,7 +4,10 @@ Control the 4-zone RGB keyboard of the **Acer Predator Helios 300 (PH315-53)** o
 Hackintosh, from a menu bar app. No password prompts, no Windows/PredatorSense needed.
 
 - Static color for all zones or one color per zone
-- Effects: Breath, Neon, Wave, Shifting, Zoom, Meteor, Twinkling (speed, brightness, direction)
+- Built-in effects (keyboard firmware): Breath, Neon, Wave, Shifting, Zoom (speed, brightness, direction)
+- Animated effects (driven by the app): Rainbow, Rainbow wave, Color cycle, Multi-color breathing,
+  Strobe, Police, CPU load meter, Aurora
+- Menu bar icon shows the current zone colors
 - Profiles, launch at login, re-applies your lighting at login and after sleep
   (the keyboard resets to blue after a full power-off)
 - Command line tool `predator-rgb` for scripts
@@ -78,7 +81,7 @@ predator-rgb effect 1 4 100 1 0 255 0              # green breath
 predator-rgb off
 ```
 
-Modes: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom, 6 meteor, 7 twinkling.
+Modes: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom.
 Direction: 1 right to left, 2 left to right. Color applies to breath, shifting and zoom.
 
 ## Build

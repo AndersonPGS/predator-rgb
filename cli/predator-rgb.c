@@ -39,7 +39,7 @@ static void usage(void) {
          "  predator-rgb info                         read state (read-only)\n"
          "  predator-rgb static R G B [zone 1-4|all] [brightness 0-100]\n"
          "  predator-rgb effect MODE [speed 1-9] [brightness] [dir 1|2] [R G B]\n"
-         "     modes: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom, 6 meteor, 7 twinkling\n"
+         "     modes: 1 breath, 2 neon, 3 wave, 4 shifting, 5 zoom\n"
          "  predator-rgb zones R,G,B R,G,B R,G,B R,G,B [brightness]   one color per zone\n"
          "  predator-rgb off");
 }
@@ -94,7 +94,7 @@ static int run(int argc, char **argv) {
         int speed = argc > 3 ? atoi(argv[3]) : 4, bright = argc > 4 ? atoi(argv[4]) : 100;
         int dir = argc > 5 ? atoi(argv[5]) : 1;
         int r = argc > 8 ? atoi(argv[6]) : 0, g = argc > 8 ? atoi(argv[7]) : 0, b = argc > 8 ? atoi(argv[8]) : 0;
-        if (mode < 1 || mode > 7) { usage(); return 1; }
+        if (mode < 1 || mode > 5) { usage(); return 1; }
         return set_kbbl(mode, speed, bright, dir, r, g, b) ? 1 : 0;
     }
     if (!strcmp(cmd, "off")) return set_kbbl(0, 0, 0, 0, 0, 0, 0) ? 1 : 0;
